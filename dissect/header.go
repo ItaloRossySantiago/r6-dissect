@@ -132,6 +132,10 @@ const (
 
 	Attack  TeamRole = "Attack"
 	Defense TeamRole = "Defense"
+	// Unknown é devolvido por Operator.Role para um ID que ainda não está em
+	// _operatorRoles — normalmente um operador lançado depois desta versão
+	// da biblioteca. Ver dissect/operator_roles.go.
+	Unknown TeamRole = "Unknown"
 
 	Recruit     Operator = 359656345734
 	Castle      Operator = 92270642682 // May technically refer to the op icon?

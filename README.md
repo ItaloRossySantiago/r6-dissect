@@ -6,6 +6,40 @@ Match Replay API/CLI for Rainbow Six: Siege's Dissect (.rec) format.
 
 **This is a work in progress. The data format is subject to change until a stable version is released.**
 
+## Sobre este fork (ItaloRossySantiago/r6-dissect)
+
+Fork de manutenção para o [r6lobby-agent](https://github.com/ItaloRossySantiago/r6lobby-agent).
+A `main` upstream está parada desde 16/09/2025 (commit `e6c2ca8`); este fork
+parte exatamente desse commit e aplica três mudanças:
+
+**1. `Operator.Role()` não usa mais `panic`.** Todo operador novo que a
+Ubisoft lança causa `panic: role unknown for operator ID N` até alguém
+reverse-engenheirar o ID e mandar PR — issues [#66](https://github.com/redraskal/r6-dissect/issues/66),
+[#103](https://github.com/redraskal/r6-dissect/issues/103) e
+[#123](https://github.com/redraskal/r6-dissect/issues/123) são o mesmo
+crash, uma vez por temporada. Um processo que lê replay em produção não pode
+morrer no meio de uma sessão por causa disso. `Role()` agora devolve
+`Unknown` e loga um aviso — ver `dissect/operator_roles.go`.
+
+**2. `x/tools` atualizado de v0.27.0 para a mais recente.** A versão antiga
+não é compatível com toolchains Go mais novas (`internal error: package
+"strings" without types was imported`) — quebrava `go test` mesmo sem
+nenhuma mudança de código.
+
+**3. `Test_operatorsMissing` / `Test_operatorsRedundant` pulados.** Os dois
+dependem de `ubi.GetOperatorMap()`, que faz scraping da página de operadores
+da Ubisoft. Em set/2026 confirmamos que essa página foi reconstruída em
+React — o conteúdo só existe depois do JS rodar num navegador real, e
+qualquer cliente HTTP puro (inclusive o `net/http` que a lib usa) recebe só
+a casca vazia. Ver comentário em `dissect/test/operators_missing_test.go`.
+
+Também mantemos `dissect/unidentified_operators.go`: um registro dos IDs de
+operador vistos em replay real que ainda não têm nome — hoje, um ID visto em
+partidas de 2026-09-07 (Y11S3), que por eliminação contra a lista oficial da
+Ubisoft só pode ser **Noor** (Defender) ou **Solid Snake** (Attacker) — são
+os dois únicos operadores da lista oficial ausentes do `header.go` atual.
+Falta confirmar qual dos dois é, e então declarar o ID de verdade.
+
 Download the latest version here: https://github.com/redraskal/r6-dissect/releases
 
 ## Current Features
