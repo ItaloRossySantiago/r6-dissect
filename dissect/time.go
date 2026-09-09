@@ -65,7 +65,20 @@ func (r *Reader) roundEnd() {
 	for _, u := range r.MatchFeedback {
 		switch u.Type {
 		case Kill:
-			i := r.Header.Players[r.PlayerIndexByUsername(u.Target)].TeamIndex
+			// FORK NOTE (r6lobby): PlayerIndexByUsername devolve -1 quando o
+			// alvo não está em r.Header.Players -- acontece de verdade com
+			// jogador de backfill que entra no meio da partida e cujo pacote
+			// de info nunca chega neste round. Indexar direto crashava com
+			// "index out of range [-1]". Ignorar este evento de kill mantém
+			// a morte fora da contagem de "time inteiro eliminado" abaixo,
+			// que é o único uso de `deaths` nesta função -- consequência
+			// aceitável (round pode não detectar vitória por eliminação
+			// neste caso raro) frente a derrubar o processo inteiro.
+			idx := r.PlayerIndexByUsername(u.Target)
+			if idx < 0 {
+				break
+			}
+			i := r.Header.Players[idx].TeamIndex
 			deaths[i] = deaths[i] + 1
 			// fix killer username
 			if len(u.usernameFromScoreboard) > 0 {
@@ -73,14 +86,22 @@ func (r *Reader) roundEnd() {
 			}
 			break
 		case Death:
-			i := r.Header.Players[r.PlayerIndexByUsername(u.Username)].TeamIndex
+			idx := r.PlayerIndexByUsername(u.Username)
+			if idx < 0 {
+				break
+			}
+			i := r.Header.Players[idx].TeamIndex
 			deaths[i] = deaths[i] + 1
 			break
 		case DefuserPlantComplete:
 			planter = r.PlayerIndexByUsername(u.Username)
 			break
 		case DefuserDisableComplete:
-			i := r.Header.Players[r.PlayerIndexByUsername(u.Username)].TeamIndex
+			idx := r.PlayerIndexByUsername(u.Username)
+			if idx < 0 {
+				break
+			}
+			i := r.Header.Players[idx].TeamIndex
 			r.Header.Teams[i].Won = true
 			r.Header.Teams[i].WinCondition = DisabledDefuser
 			return
